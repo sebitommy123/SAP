@@ -24,7 +24,8 @@ classifiers = [
 ]
 requires-python = ">=3.8"
 dependencies = [
-    # Dependencies will be read from requirements.txt
+    "flask>=2.0.0",
+    "werkzeug>=2.0.0",
 ]
 
 [project.optional-dependencies]

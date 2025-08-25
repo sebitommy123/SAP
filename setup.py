@@ -28,7 +28,10 @@ setup(
         "Programming Language :: Python :: 3.11",
     ],
     python_requires=">=3.8",
-    install_requires=requirements,
+    install_requires=[
+        "flask>=2.0.0",
+        "werkzeug>=2.0.0",
+    ],
     entry_points={
         "console_scripts": [
             "sap=sap.cli:main",
