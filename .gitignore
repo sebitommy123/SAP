@@ -1,0 +1,79 @@
+# Virtual environments
+sa_env/
+venv/
+env/
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Test coverage
+htmlcov/
+.coverage
+.pytest_cache/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Binary files (except our distribution binaries)
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Keep our distribution binaries
+!dist/sa-installer
+!dist/sa-shell-fast/
+!dist/sa-shell-0.1.0.zip 

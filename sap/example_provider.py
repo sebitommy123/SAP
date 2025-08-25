@@ -1,9 +1,11 @@
 from datetime import datetime
 from sap import SAPServer, make_object, timestamp, link
+import time
 
 
 def fetch_data():
     # In reality this could be a DB query or web scraping
+    time.sleep(10)
     return [
         make_object(
             id="emp_001",
