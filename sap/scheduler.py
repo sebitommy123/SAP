@@ -1,7 +1,10 @@
 from __future__ import annotations
+import logging
 import threading
 import time
 from typing import Any, Callable, List, Optional, Iterable, Union
+
+logger = logging.getLogger(__name__)
 
 
 class IntervalCacheRunner:
@@ -68,10 +71,12 @@ class IntervalCacheRunner:
         # Guard: do not overlap fetches
         with self._lock:
             if self._in_flight:
+                logger.debug("Fetch already in progress, skipping")
                 return
             self._in_flight = True
         try:
             self._last_started_at = time.time()
+            logger.info("Starting data fetch")
 
             result_holder: dict = {}
             error_holder: dict = {}
@@ -79,8 +84,11 @@ class IntervalCacheRunner:
 
             def _call():
                 try:
+                    logger.debug("Calling user-provided fetch function")
                     result_holder["data"] = self._fetch_fn()
+                    logger.debug("Fetch function completed successfully")
                 except Exception as exc:
+                    logger.error(f"Fetch function failed: {exc}")
                     error_holder["err"] = exc
                 finally:
                     done_event.set()
@@ -112,20 +120,27 @@ class IntervalCacheRunner:
                 except Exception:
                     raise TypeError("each item must be a dict or provide to_json()")
             if self._postprocess is not None:
+                logger.debug("Applying post-processing to fetched data")
                 result = self._postprocess(result)
+            
             with self._lock:
                 self._cache = result
                 self._last_completed_at = time.time()
                 self._last_error = None
+            
+            duration = self._last_completed_at - self._last_started_at
+            logger.info(f"Data fetch completed: {len(result)} objects in {duration:.3f}s")
         except Exception as exc:
             with self._lock:
                 self._last_error = f"{type(exc).__name__}: {exc}"
                 self._last_completed_at = time.time()
+            logger.error(f"Data fetch failed: {exc}")
         finally:
             with self._lock:
                 self._in_flight = False
 
     def _run_loop(self) -> None:
+        logger.info(f"Starting interval runner (interval: {self._interval_seconds}s)")
         if self._run_immediately:
             self._run_once()
         while not self._stop_event.is_set():
@@ -136,4 +151,5 @@ class IntervalCacheRunner:
                 waited += sleep_chunk
             if self._stop_event.is_set():
                 break
+            logger.debug(f"Interval elapsed, starting next fetch")
             self._run_once()

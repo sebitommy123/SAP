@@ -28,7 +28,7 @@ def main() -> None:
     parser.add_argument("--register", action="store_true", help="Register URL in ~/.sa/saps.txt")
     parser.add_argument("--require-initial", action="store_true", help="Wait for first fetch to succeed before serving")
     parser.add_argument("--initial-timeout", type=float, default=30.0, help="Timeout for initial fetch wait")
-    args = parser.parse_args()
+    context, args = parser.parse_args()
 
     fetch_fn = _load_callable(args.fetch)
 

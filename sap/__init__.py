@@ -1,7 +1,9 @@
-from .types import Timestamp, Link, timestamp, link, encode_value
+from .sap_types import Timestamp, Link, timestamp, link, encode_value
 from .models import SAPObject, make_object
 from .scheduler import IntervalCacheRunner
-from .server import SAPServer, run_server, ProviderInfo
+from .server import SAPServer, run_server, ProviderInfo, configure_logging
+from .scope import Scope
+from .query_scope import QueryScope
 
 __all__ = [
     "Timestamp",
@@ -15,4 +17,7 @@ __all__ = [
     "SAPServer",
     "ProviderInfo",
     "run_server",
+    "Scope",
+    "QueryScope",
+    "configure_logging",
 ]
