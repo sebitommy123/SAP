@@ -1,5 +1,5 @@
 from datetime import datetime, timezone, timedelta
-from sap import SAPServer, make_object, timestamp, link, Scope, QueryScope
+from sap import SAPServer, make_object, timestamp, link, Scope
 import time
 import random
 import uuid
@@ -47,13 +47,15 @@ def generate_swipe_data():
                     id=f"swipe_{uuid.uuid4().hex[:8]}",
                     types=["swipe", "entrance"],
                     source="badge_system",
-                    employee_id=emp["id"],
-                    employee_name=emp["name"],
-                    department=emp["department"],
-                    date=entrance_time.strftime("%Y-%m-%d"),
-                    time=entrance_time.strftime("%H:%M:%S"),
-                    entrance_or_exit="entrance",
-                    timestamp=timestamp(entrance_time),
+                    properties={
+                        "employee_id": emp["id"],
+                        "employee_name": emp["name"],
+                        "department": emp["department"],
+                        "date": entrance_time.strftime("%Y-%m-%d"),
+                        "time": entrance_time.strftime("%H:%M:%S"),
+                        "entrance_or_exit": "entrance",
+                        "timestamp": timestamp(entrance_time),
+                    }
                 ))
                 
                 # Create exit swipe
@@ -61,13 +63,15 @@ def generate_swipe_data():
                     id=f"swipe_{uuid.uuid4().hex[:8]}",
                     types=["swipe", "exit"],
                     source="badge_system",
-                    employee_id=emp["id"],
-                    employee_name=emp["name"],
-                    department=emp["department"],
-                    date=exit_time.strftime("%Y-%m-%d"),
-                    time=exit_time.strftime("%H:%M:%S"),
-                    entrance_or_exit="exit",
-                    timestamp=timestamp(exit_time),
+                    properties={
+                        "employee_id": emp["id"],
+                        "employee_name": emp["name"],
+                        "department": emp["department"],
+                        "date": exit_time.strftime("%Y-%m-%d"),
+                        "time": exit_time.strftime("%H:%M:%S"),
+                        "entrance_or_exit": "exit",
+                        "timestamp": timestamp(exit_time),
+                    }
                 ))
             
             current_date += timedelta(days=1)
@@ -82,48 +86,55 @@ def fetch_data():
             id="emp_001",
             types=["person", "employee"],
             source="hr_system",
-            name="Alice Johnson",
-            department="Engineering",
-            hired_at=timestamp(datetime.now(timezone.utc)),
-            swipes=link("swipe[.employee_id == 'emp_001']", "Swipes")
+            properties={
+                "name": "Alice Johnson",
+                "department": "Engineering",
+                "hired_at": timestamp(datetime.now(timezone.utc)),
+                "swipes": link("swipe[.employee_id == 'emp_001']", "Swipes"),
+                "date": '2025-06-06'
+            }
         ),
         make_object(
             id="emp_002",
             types=["person", "employee"],
             source="hr_system",
-            name="Bob Smith",
-            department="Engineering",
-            hired_at=timestamp(datetime.now(timezone.utc)),
-            swipes=link("swipe[.employee_id == 'emp_002']", "Swipes")
+            properties={
+                "name": "Bob Smith",
+                "department": "Engineering",
+                "hired_at": timestamp(datetime.now(timezone.utc)),
+                "swipes": link("swipe[.employee_id == 'emp_002']", "Swipes"),
+                "date": '2025-06-05'
+            }
         ),
         make_object(
             id="emp_003",
             types=["person", "employee"],
             source="hr_system",
-            name="Carol Davis",
-            department="Design",
-            hired_at=timestamp(datetime.now(timezone.utc)),
-            swipes=link("swipe[.employee_id == 'emp_003']", "Swipes")
+            properties={
+                "name": "Carol Davis",
+                "department": "Design",
+                "hired_at": timestamp(datetime.now(timezone.utc)),
+                "swipes": link("swipe[.employee_id == 'emp_003']", "Swipes"),
+                "date": '2025-06-04'
+            }
         ),
     ]
     
     return employees
 
 
-def lazy_load_data(query_scope: QueryScope, plan_only: bool) -> tuple[list[dict], str]:
+def lazy_load_data(scope: Scope, conditions: list[tuple[str, str, str]], plan_only: bool, id_types: set[tuple[str, str]]) -> tuple[list[dict], str]:
     """
     Lazy load data based on the query scope.
     
     Args:
-        query_scope: The scope and conditions for the query
+        scope: The scope for the query
+        conditions: The conditions for the query
         plan_only: If True, only return the plan without fetching data
-        
+        id_types: The id_types for the query
     Returns:
         Tuple of (sa_objects, plan_description)
     """
-    scope = query_scope.scope
-    conditions = query_scope.conditions
-    
     # Build plan description
     plan_parts = [f"Lazy loading {scope.type} objects"]
     if conditions:
@@ -156,33 +167,60 @@ def lazy_load_data(query_scope: QueryScope, plan_only: bool) -> tuple[list[dict]
             raise Exception("Only '==' operator is supported for date filtering")
         
         # Generate swipes for the specific date
-        target_date = datetime.strptime(value, "%Y-%m-%d").date()
+        try:
+            target_date = datetime.strptime(value, "%Y-%m-%d").date()
+        except ValueError:
+            raise Exception(f"Invalid date format: '{value}'. Expected format: YYYY-MM-DD")
         swipes = generate_swipes_for_date(target_date)
-        
+
         return swipes, plan
     
     elif scope.type == "employee":
-        # Check if __id__ condition is provided
-        id_condition = None
-        for condition in conditions:
-            field, operator, value = condition
-            if field == "__id__":
-                id_condition = (field, operator, value)
-                break
-        
-        if not id_condition:
-            raise Exception("Employee queries must include an '__id__' condition")
-        
-        # Generate employee data with favorite fields
-        field, operator, value = id_condition
-        if operator != "==":
-            raise Exception("Only '==' operator is supported for __id__ filtering")
+        employee_ids = [id_ for id_, type_ in id_types if type_ == "employee"]
+
+        if len(employee_ids) == 0:
+            return [], plan
+
+        if len(employee_ids) != 1:
+            raise Exception(f"You can only get one employee at a time, got {len(employee_ids)}")
         
         # Generate employee with favorite fields
-        employee = generate_employee_with_favorites(value)
+        employee = generate_employee_with_favorites(employee_ids[0])
         
         return [employee], plan
-    
+    elif scope.type == "simple":
+        return [
+            make_object(
+                id="simple_001",
+                types=["simple"],
+                source="simple_provider",
+                properties={
+                    "one": "one",
+                    "two": "two",
+                    "three": "three"
+                }
+            ),
+            make_object(
+                id="simple_002",
+                types=["simple"],
+                source="simple_provider",
+                properties={
+                    "one": "one",
+                    "two": "two",
+                    "three": "three"
+                }
+            ),
+            make_object(
+                id="simple_003",
+                types=["simple"],
+                source="simple_provider",
+                properties={
+                    "one": "one",
+                    "two": "two",
+                    "three": "three"
+                }
+            ),
+        ], plan
     else:
         # Decline request for unsupported types
         raise Exception(f"Lazy loading not supported for type: {scope.type}")
@@ -233,14 +271,16 @@ def generate_swipes_for_date(target_date: datetime.date) -> list[dict]:
             id=f"swipe_{uuid.uuid4().hex[:8]}",
             types=["swipe"],
             source="badge_system",
-            employee_id=emp["id"],
-            employee_name=emp["name"],
-            department=emp["department"],
-            date=entrance_time.strftime("%Y-%m-%d"),
-            time=entrance_time.strftime("%H:%M:%S"),
-            entrance_or_exit="entrance",
-            timestamp=timestamp(entrance_time),
-            next_entrance=link(f"swipe[.employee_id == {emp['id']}][.entrance_or_exit == 'entrance'][.date == '{date_tomorrow}']", "Next entrance")
+            properties={
+                "employee_id": emp["id"],
+                "employee_name": emp["name"],
+                "department": emp["department"],
+                "date": entrance_time.strftime("%Y-%m-%d"),
+                "time": entrance_time.strftime("%H:%M:%S"),
+                "entrance_or_exit": "entrance",
+                "timestamp": timestamp(entrance_time),
+                "next_entrance": link(f"swipe[.employee_id == '{emp['id']}'][.entrance_or_exit == 'entrance'][.date == '{date_tomorrow}']", "Next entrance")
+            }
         ))
         
         # Create exit swipe
@@ -248,14 +288,16 @@ def generate_swipes_for_date(target_date: datetime.date) -> list[dict]:
             id=f"swipe_{uuid.uuid4().hex[:8]}",
             types=["swipe"],
             source="badge_system",
-            employee_id=emp["id"],
-            employee_name=emp["name"],
-            department=emp["department"],
-            date=exit_time.strftime("%Y-%m-%d"),
-            time=exit_time.strftime("%H:%M:%S"),
-            entrance_or_exit="exit",
-            timestamp=timestamp(exit_time),
-            next_exit=link(f"swipe[.employee_id == {emp['id']}][.entrance_or_exit == 'exit'][.date == '{date_tomorrow}']", "Next exit")
+            properties={
+                "employee_id": emp["id"],
+                "employee_name": emp["name"],
+                "department": emp["department"],
+                "date": exit_time.strftime("%Y-%m-%d"),
+                "time": exit_time.strftime("%H:%M:%S"),
+                "entrance_or_exit": "exit",
+                "timestamp": timestamp(exit_time),
+                "next_exit": link(f"swipe[.employee_id == '{emp['id']}'][.entrance_or_exit == 'exit'][.date == '{date_tomorrow}']", "Next exit")
+            }
         ))
     
     return swipes
@@ -345,19 +387,22 @@ def generate_employee_with_favorites(employee_id: str) -> dict:
     return make_object(
         id=employee_id,
         types=["person", "employee"],
-        source="hr_system",
-        favorite_color=emp_info["favorite_color"],
-        favorite_number=emp_info["favorite_number"],
-        favorite_shape=emp_info["favorite_shape"],
-        entrances=link(f"swipe[.employee_id == '{employee_id}'][.entrance_or_exit == 'entrance']", "Entrance swipes")
+        source="hr_system_extra",
+        properties={
+            "favorite_color": emp_info["favorite_color"],
+            "favorite_number": emp_info["favorite_number"],
+            "favorite_shape": emp_info["favorite_shape"],
+            "entrances": link(f"swipe[.employee_id == '{employee_id}'][.entrance_or_exit == 'entrance']", "Entrance swipes")
+        }
     )
 
 
 if __name__ == "__main__":
     # Define lazy loading scopes
     lazy_scopes = [
-        Scope(type="swipe", fields=["employee_id", "employee_name", "department", "date", "time", "entrance_or_exit", "timestamp"]),
-        Scope(type="employee", fields=["favorite_color", "favorite_number", "favorite_shape", "entrances"])
+        Scope(type="swipe", fields=["employee_id", "employee_name", "department", "date", "time", "entrance_or_exit", "timestamp"], filtering_fields=['date'], needs_id_types=False),
+        Scope(type="employee", fields=["favorite_color", "favorite_number", "favorite_shape", "entrances"], filtering_fields=[], needs_id_types=True),
+        Scope(type="simple", fields=["one", "two", "three"], filtering_fields=[], needs_id_types=False)
     ]
     
     server = SAPServer(

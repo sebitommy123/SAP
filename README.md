@@ -176,7 +176,7 @@ To enable lazy loading, you need to:
 ### Basic Lazy Loading Example
 
 ```python
-from sap import SAPServer, make_object, timestamp, Scope, QueryScope
+from sap import SAPServer, make_object, timestamp, Scope
 from datetime import datetime
 
 def fetch_data():

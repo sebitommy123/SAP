@@ -3,7 +3,6 @@ from .models import SAPObject, make_object
 from .scheduler import IntervalCacheRunner
 from .server import SAPServer, run_server, ProviderInfo, configure_logging
 from .scope import Scope
-from .query_scope import QueryScope
 
 __all__ = [
     "Timestamp",
@@ -18,6 +17,5 @@ __all__ = [
     "ProviderInfo",
     "run_server",
     "Scope",
-    "QueryScope",
     "configure_logging",
 ]

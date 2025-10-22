@@ -23,7 +23,9 @@ class SAPObject:
         return payload
 
 
-def make_object(id: str, types: List[str], source: str, **properties: Any) -> Dict[str, Any]:
+def make_object(id: str, types: List[str], source: str, properties: Dict[str, Any] = None) -> Dict[str, Any]:
+    if properties is None:
+        properties = {}
     return SAPObject(id=id, types=types, source=source, properties=properties).to_json()
 
 

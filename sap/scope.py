@@ -5,3 +5,5 @@ from typing import Literal, Union
 class Scope:
     type: str
     fields: Union[list[str], Literal["*"]]
+    filtering_fields: list[str]
+    needs_id_types: bool

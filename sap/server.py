@@ -11,7 +11,6 @@ from werkzeug.serving import make_server
 
 from .scheduler import IntervalCacheRunner
 from .scope import Scope
-from .query_scope import QueryScope
 
 # Configure logging for SAP
 logger = logging.getLogger(__name__)
@@ -96,7 +95,7 @@ class SAPServer:
         fetch_fn: Callable[[], List[dict]],
         interval_seconds: float,
         run_immediately: bool = True,
-        lazy_load_fn: Optional[Callable[[QueryScope, bool], Tuple[List[dict], str]]] = None,
+        lazy_load_fn: Optional[Callable[[Scope, list[tuple[str, str, str]], bool, set[tuple[str, str]]], Tuple[List[dict], str]]] = None,
         enable_logging: bool = True,
         log_level: str = "INFO",
         enable_debug: bool = False,
@@ -157,7 +156,9 @@ class SAPServer:
             lazy_scopes = [
                 {
                     "type": scope.type,
-                    "fields": scope.fields
+                    "fields": scope.fields,
+                    "filtering_fields": scope.filtering_fields,
+                    "needs_id_types": scope.needs_id_types
                 } for scope in (provider.lazy_loading_scopes or [])
             ]
             logger.debug(f"Returning lazy loading scopes: {lazy_scopes}")
@@ -190,10 +191,11 @@ class SAPServer:
                 scope_data = data.get("scope", {})
                 conditions = data.get("conditions", [])
                 plan_only = data.get("plan_only", False)
+                id_types = data.get("id_types", [])
                 
                 logger.info(f"Lazy loading request: type={scope_data.get('type', 'unknown')}, "
                            f"fields={scope_data.get('fields', 'unknown')}, "
-                           f"conditions={len(conditions)}, plan_only={plan_only}")
+                           f"conditions={len(conditions)}, plan_only={plan_only}, id_types={id_types}")
                 
                 if not scope_data or "type" not in scope_data:
                     logger.warning("Lazy loading request with invalid scope (missing type)")
@@ -201,10 +203,10 @@ class SAPServer:
                 
                 scope = Scope(
                     type=scope_data["type"],
-                    fields=scope_data.get("fields", "*")
+                    fields=scope_data.get("fields", "*"),
+                    filtering_fields=scope_data.get("filtering_fields", []),
+                    needs_id_types=scope_data.get("needs_id_types", False)
                 )
-                
-                query_scope = QueryScope(scope=scope, conditions=conditions)
                 
                 # Check if the type is supported for lazy loading
                 supported_types = {s.type for s in (provider.lazy_loading_scopes or [])}
@@ -217,7 +219,7 @@ class SAPServer:
                 # Call the lazy load function
                 try:
                     start_time = time.time()
-                    sa_objects, plan = self.lazy_load_fn(query_scope, plan_only)
+                    sa_objects, plan = self.lazy_load_fn(scope, conditions, plan_only, id_types)
                     duration = time.time() - start_time
                     
                     logger.info(f"Lazy loading completed: {len(sa_objects)} objects returned in {duration:.3f}s")
@@ -230,7 +232,7 @@ class SAPServer:
                 except Exception as e:
                     # Provider declined the request
                     logger.error(f"Provider declined lazy loading request: {str(e)}")
-                    return jsonify({"error": str(e)}), 400
+                    return jsonify({"error": str(e)})
                     
             except Exception as e:
                 logger.error(f"Error processing lazy loading request: {str(e)}")
@@ -392,7 +394,7 @@ def run_server(
     interval_seconds: float,
     version: str = "0.1.0",
     lazy_loading_scopes: List[Scope] = None,
-    lazy_load_fn: Optional[Callable[[QueryScope, bool], Tuple[List[dict], str]]] = None,
+    lazy_load_fn: Optional[Callable[[Scope, list[tuple[str, str, str]], bool, set[tuple[str, str]]], Tuple[List[dict], str]]] = None,
     host: str = "0.0.0.0",
     port: int = 8080,
     run_immediately: bool = True,
