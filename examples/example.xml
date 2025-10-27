@@ -1,0 +1,50 @@
+<Layout>
+    <Meaning aaa='bbb'>
+        <Quadrant lol="42" name="lol">Yeah</Quadrant>
+        <Quintant>Nah</Quintant>
+    </Meaning>
+    <Trolls>
+        <Troll id="troll_001">Steven</Troll>
+        <Troll id="troll_002">John</Troll>
+        <Troll id="troll_003">Jane</Troll>
+        <Troll id="troll_004">Jim</Troll>
+        <Troll id="troll_005">Jill</Troll>
+        <Troll id="troll_006">Jack</Troll>
+        <Troll id="troll_007">Jill</Troll>
+    </Trolls>
+    <Hosts>
+        <Host id="host_001">
+            <App name="app_001" role="router"/>
+            <App name="app_002" role="switch"/>
+            <App name="app_003" role="switch"/>
+            <App name="app_004" role="switch"/>
+            <App name="app_005" role="switch"/>
+            <App name="app_006" role="switch"/>
+            <App name="app_007" role="switch"/>
+            <App name="app_008" role="switch"/>
+            <App name="app_009" role="switch"/>
+            <App name="app_010" role="switch"/>
+        </Host>
+        <Host id="host_002">
+            <App name="app_011" role="router"/>
+            <App name="app_012" role="switch"/>
+            <App name="app_013" role="switch"/>
+            <App name="app_014" role="switch"/>
+            <App name="app_015" role="switch"/>
+            <App name="app_016" role="switch"/>
+            <App name="app_017" role="switch"/>
+            <App name="app_018" role="switch"/>
+            <App name="app_019" role="switch"/>
+            <App name="app_020" role="switch"/>
+        </Host>
+        <Host id="host_003">
+            <App name="app_021" role="router"/>
+            <App name="app_022" role="switch"/>
+            <App name="app_023" role="switch"/>
+            <App name="app_024" role="switch"/>
+            <App name="app_025" role="switch"/>
+            <App name="app_026" role="switch"/>
+            <App name="app_027" role="switch"/>
+        </Host>
+    </Hosts>
+</Layout>

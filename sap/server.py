@@ -238,6 +238,11 @@ class SAPServer:
                 logger.error(f"Error processing lazy loading request: {str(e)}")
                 return jsonify({"error": f"Invalid request: {str(e)}"}), 400
 
+        @app.route("/wtf")
+        def wtf():
+            """What the fuck is this server? Returns server type."""
+            return jsonify({"type": "SAP"})
+
         @app.route("/health")
         def health():
             return jsonify({"status": "ok", "count": len(runner.get_cached())})
@@ -262,6 +267,7 @@ class SAPServer:
         @app.route("/")
         def root():
             endpoints = {
+                "/wtf": "Server type identification",
                 "/hello": "Provider information",
                 "/all_data": "All SAObject data",
                 "/health": "Health probe",

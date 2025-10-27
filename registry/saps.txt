@@ -1,0 +1,6 @@
+# SAP Registry - List of running SAP servers
+# Format: ip:port (one per line)
+# Lines starting with # are comments and will be ignored
+
+# Example SAP servers
+localhost:8080
